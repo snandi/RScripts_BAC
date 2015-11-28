@@ -36,7 +36,7 @@ bp.loc <- fn_load_bploc(
 Chr <- 'chr7'
 ChrNum <- gsub(pattern = 'chr', replacement = '', x = Chr)
 
-FragIndex <- 12437
+FragIndex <- 12440
 FragIndices <- c(12437:12447) 
 BackbonePixels <- 1
 OpticalRes_Factor <- 1
@@ -49,32 +49,11 @@ NumBP_Frag <- subset(bp.loc, alignedChr == Chr & alignedFragIndex == FragIndex)[
 #NumSubFrag <- round(NumBP_Frag/BasePairInterval, 0) ## Number of sub fragments
 PixelLength_Theo <- subset(bp.loc, alignedChr == Chr & alignedFragIndex == FragIndex)[['PixelLength_Theo']]
 
-IntensityData_inRange <- fn_saveTruncData(
-  Chr                   = Chr, 
-  FragIndex             = FragIndex, 
-  DataPath.mf           = DataPath.mm52, 
-  Truncate              = FALSE,
-  #  TruncateLength        = 5,
-  StretchPercentAllowed = 50, 
-  Save                  = TRUE, 
-  bp.loc                = bp.loc
-)
-
 #######################################################################
 ## This for loop just saves the intensities of Nmaps in RData format ##
 #######################################################################
-for(FragIndex in FragIndices){
+#for(FragIndex in FragIndices){
   print(FragIndex)
-  IntensityData_inRange <- fn_saveTruncData(
-    Chr                   = Chr, 
-    FragIndex             = FragIndex, 
-    DataPath.mf           = DataPath.mm52, 
-    Truncate              = FALSE,
-    #  TruncateLength        = 5,
-    StretchPercentAllowed = 50, 
-    Save                  = TRUE, 
-    bp.loc                = bp.loc
-  )
   
   ############################ PLOTTING ################################
   FragBP_Start <- bp.loc[which(bp.loc$alignedChr==Chr & 
@@ -91,10 +70,23 @@ for(FragIndex in FragIndices){
                               Filename=paste0('~/human_nMaps/SequenceData/', Chr, '.fa'),
                               FragBP_Start=FragBP_Start,
                               FragBP_End=FragBP_End)
-  PlotGC <- fn_createGCATPlot(SeqComp=SeqComp, xlab='', FragBP_Start, FragBP_End, 
-                              FragIndex, Chr)
-  SplitSeq_GCAT <- SeqComp[['SplitSeq_GCAT']]
-  Data <- melt(data = SplitSeq_GCAT, id.vars = 'Base', measure.vars = c('C', 'G', 'A', 'T'))
-  str(Data)
 
-  qplot() + geom_bar(aes(x = X1, y = value, fill = factor(X2)), data = Data, stat = 'identity')
+ ## PlotGC <- fn_createGCATPlot(SeqComp=SeqComp, xlab='', FragBP_Start, FragBP_End, 
+ ##                              FragIndex, Chr)
+  GCAT <- SeqComp[['SplitSeq_GCAT']]
+  GCAT.Long <- melt(data = GCAT, id.vars = 'Base', measure.vars = c('C', 'G', 'A', 'T'))
+colnames(GCAT.Long) <- c('bp', 'base', 'proportion')
+str(GCAT.Long)
+
+  #ggplot(aes(x = X1, y = value, fill = X2), data = Data) + geom_bar()
+  #qplot(proportion, data = GCAT.Long, geom="bar", fill=factor(base))
+
+SeqPlot <- qplot() + geom_bar(aes(y = proportion, x = bp, fill = base),
+                   data = GCAT.Long, stat = 'identity')
+
+GCAT <- as.data.frame(GCAT)
+GCAT$Test <- 0
+GCAT$Test <- apply(X = GCAT, MARGIN = 1, FUN = function(Row){(Row[1] + Row[2] < 0.35) || (Row[1] + Row[2] > 0.65)})
+mean(GCAT$Test)
+
+2*mean(as.matrix(GCAT[,c('C', 'G')]))
