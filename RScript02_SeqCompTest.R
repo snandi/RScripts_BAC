@@ -80,13 +80,31 @@ str(GCAT.Long)
 
   #ggplot(aes(x = X1, y = value, fill = X2), data = Data) + geom_bar()
   #qplot(proportion, data = GCAT.Long, geom="bar", fill=factor(base))
+my.Colors=c('gray25', 'olivedrab1', 'olivedrab4', 'gray56')
+Length <- round((FragBP_End - FragBP_Start)/1000, 0)
+#if(MainTitle==''){
+  MainTitle <- paste(Chr, 'Frag', FragIndex, ',', Length, 'MB Long, Variability:', GC_VarIndex)
+#}
 
 SeqPlot <- qplot() + geom_bar(aes(y = proportion, x = bp, fill = base),
-                   data = GCAT.Long, stat = 'identity')
+                   data = GCAT.Long, stat = 'identity') +
+  ylab(label = '') + ggtitle(label = MainTitle) + 
+  scale_fill_manual(values = my.Colors) +
+  theme(legend.position = 'top') 
+  
+SeqPlot
+
+SeqComp <- c(SeqComp, SeqPlot = SeqPlot)
 
 GCAT <- as.data.frame(GCAT)
 GCAT$Test <- 0
-GCAT$Test <- apply(X = GCAT, MARGIN = 1, FUN = function(Row){(Row[1] + Row[2] < 0.35) || (Row[1] + Row[2] > 0.65)})
-mean(GCAT$Test)
+GCAT$Test <- apply(X = GCAT, MARGIN = 1, FUN = function(Row){ 
+  Val = 0; 
+  if(Row[1] + Row[2] < 0.35) {Val = 0.5}; 
+  if(Row[1] + Row[2] > 0.65) {Val = 1}; 
+  return(Val)}
+  )
 
-2*mean(as.matrix(GCAT[,c('C', 'G')]))
+GC_VarIndex <- round(mean(GCAT$Test), 2 )
+
+
