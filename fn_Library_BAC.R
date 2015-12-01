@@ -28,5 +28,75 @@ fn_load_bploc <- function(ConversionFactor=206, Filename.bploc){
 }
 ###############################################################################
 
+###############################################################################
+## This function saves sequence composition related objects
+###############################################################################
+fn_saveSeqComp <- function(
+  Chr, 
+  FragIndex,
+  bp.loc,
+  BasePairInterval,
+  Save = TRUE,
+  DataPath
+  ){
+  FragBP_Start <- bp.loc[which(bp.loc$alignedChr==Chr & 
+                                 bp.loc$alignedFragIndex == FragIndex), 
+                         'refMapCoordStart'] 
+  FragBP_End <- bp.loc[which(bp.loc$alignedChr==Chr & 
+                               bp.loc$alignedFragIndex == FragIndex), 
+                       'refMapCoordEnd']
+  NumBP_Frag <- FragBP_End - FragBP_Start ## Length of frag in BP
+  NumSubFrag <- round(NumBP_Frag/BasePairInterval, 0)
+  SeqComp <- fn_returnSeqComp(Chr=Chr, FragIndex=FragIndex,
+                              Interval=BasePairInterval,
+                              numPixels=NumSubFrag,
+                              Filename=paste0('~/human_nMaps/SequenceData/', Chr, '.fa'),
+                              FragBP_Start=FragBP_Start,
+                              FragBP_End=FragBP_End)
 
+  GCAT <- SeqComp[['SplitSeq_GCAT']]
+  GCAT.Long <- melt(data = GCAT, id.vars = 'Base', measure.vars = c('C', 'G', 'A', 'T'))
+  colnames(GCAT.Long) <- c('bp', 'base', 'proportion')
+  
+  GCAT <- as.data.frame(GCAT)
+  GCAT$Test <- 0
+  GCAT$Test <- apply(X = GCAT, MARGIN = 1, FUN = function(Row){ 
+    Val = 0; 
+    if(Row[1] + Row[2] < 0.35) {Val = 0.5}; 
+    if(Row[1] + Row[2] > 0.65) {Val = 1}; 
+    return(Val)}
+  )
+
+  GC_VarIndex <- round(mean(GCAT$Test), 2 )
+
+  my.Colors=c('gray25', 'olivedrab1', 'olivedrab4', 'gray56')
+  Length <- round((FragBP_End - FragBP_Start)/1000, 0)
+  #if(MainTitle==''){
+    MainTitle <- paste(Chr, 'Frag', FragIndex, ',', Length, 'MB Long, Variability:', GC_VarIndex)
+  #}
+
+  SeqPlot <- qplot() + geom_bar(aes(y = proportion, x = bp, fill = base),
+                   data = GCAT.Long, stat = 'identity') +
+  ylab(label = '') + ggtitle(label = MainTitle) + 
+  scale_fill_manual(values = my.Colors) +
+  theme(legend.position = 'top') 
+  
+  GC_pct <- round(colMeans(GCAT)[['G']] + colMeans(GCAT)[['C']], 2)
+  SeqComp[['SeqPlot']] <- SeqPlot
+  SeqComp[['GC_VarIndex']] <- GC_VarIndex
+  SeqComp[['GC_pct']] <- GC_pct
+  
+  FragmentName <- paste(Chr, '_frag', FragIndex, '_SeqComp', sep='')
+
+  FragmentFilename.out <- paste(DataPath, FragmentName, '_GC_Signal.txt', sep='')
+  cat(c(Chr, FragIndex, GC_VarIndex, GC_pct, Length), file = FragmentFilename.out, append = FALSE)
+
+  if(Save){
+    FragmentFilename.out <- paste(DataPath, FragmentName, '.RData', sep='')
+    save(SeqComp, file=FragmentFilename.out)
+  } else{
+    return(SeqComp)
+  }
+
+}
 

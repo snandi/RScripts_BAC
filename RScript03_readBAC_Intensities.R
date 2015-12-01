@@ -23,8 +23,9 @@ source('~/R_Packages/Registration/R/loadPackages.R')
 PackagesLoaded <- loadPackages()
 Packages <- PackagesLoaded$Packages
 Packages_Par <- PackagesLoaded$Packages_Par
-Packages_Par <- c(Packages_Par, 'seqinr')
+
 ########################################################################
+Chr <- 'chr22'
 Args <- (commandArgs(TRUE))
 for(i in 1:length(Args)){
   eval(parse(text = Args[[i]]))
@@ -35,7 +36,6 @@ ConversionFactor <- 206
 BasePairInterval <- ConversionFactor
 #Chr <- 'chr7'
 #ChrNum <- 7
-ChrNum <- gsub(pattern = 'chr', replacement = '', x = Chr)
 
 bp.loc <- fn_load_bploc(
   ConversionFactor = ConversionFactor, 
@@ -45,6 +45,8 @@ bp.loc <- fn_load_bploc(
 ########################################################################
 ## Corresponding Nmaps of the BAC DNA regions exist only for Chr 7
 ########################################################################
+#Chr <- 'chr7'
+ChrNum <- gsub(pattern = 'chr', replacement = '', x = Chr)
 
 FragIndex <- 5
 FragIndices <- c(12437:12447) 
@@ -58,7 +60,7 @@ Filename_fragTable <- paste0('/z/Proj/newtongroup/snandi/mm52-all7341/RData/', C
 load(Filename_fragTable)
 Table <- get(paste0(Chr, '_', 'Table'))
 FragIndices10 <- subset(Table, numMolecules >= 10)[, 'refStartIndex']
-#########################################################################
+########################################################################
 
 BasePairInterval <- 206*OpticalRes_Factor   ## Length of base pair interval to estimate gcat %
 
@@ -66,29 +68,69 @@ NumBP_Frag <- subset(bp.loc, alignedChr == Chr & alignedFragIndex == FragIndex)[
 #NumSubFrag <- round(NumBP_Frag/BasePairInterval, 0) ## Number of sub fragments
 PixelLength_Theo <- subset(bp.loc, alignedChr == Chr & alignedFragIndex == FragIndex)[['PixelLength_Theo']]
 
-## fn_saveSeqComp(
-##  Chr = Chr, 
-##  FragIndex = FragIndex,
-##  bp.loc = bp.loc,
-##  BasePairInterval = BasePairInterval,
-##  Save = TRUE,
-##  DataPath = DataPath.mm52
-##  )
+## IntensityData_inRange <- fn_saveTruncData(
+##   Chr                   = Chr, 
+##   FragIndex             = FragIndex, 
+##   DataPath.mf           = DataPath.mm52, 
+##   Truncate              = TRUE,
+##   TruncateLength        = 1,
+##   StretchPercentAllowed = 50, 
+##   Save                  = TRUE, 
+##   bp.loc                = bp.loc
+## )
+
+#######################################################################
+## This for loop just saves the intensities of Nmaps in RData format ##
+#######################################################################
+# for(FragIndex in FragIndices){
+#   print(FragIndex)
+#   IntensityData_inRange <- fn_saveTruncData(
+#     Chr                   = Chr, 
+#     FragIndex             = FragIndex, 
+#     DataPath.mf           = DataPath.mm52, 
+#     Truncate              = FALSE,
+#     #  TruncateLength        = 5,
+#     StretchPercentAllowed = 50, 
+#     Save                  = TRUE, 
+#     bp.loc                = bp.loc
+#   )
+  ## fn_smoothByFragment(
+  ##   Chr         = Chr, 
+  ##   FragIndex   = FragIndex, 
+  ##   DataPath.mf = DataPath.mm52, 
+  ##   Save        = TRUE
+  ## )
+# }
 
 #########################################################################
-## Parallelized execution of saving sequence compositions list of objects
+## Parallelized execution of smoothing the intensity files produced from 
+## the above for loop
 #########################################################################
+## For execution by fragment 
+#fn_smoothByFragment(Chr, FragIndex=FragIndex, DataPath.mf, Save=TRUE)
+
 ## For parallel execution  
-cl <- makeCluster(20)
+cl <- makeCluster(14)
 registerDoParallel(cl)
-foreach(FragIndex = FragIndices10, .inorder=FALSE, .packages=Packages_Par) %dopar% fn_saveSeqComp(
-  Chr = Chr, 
-  FragIndex = FragIndex,
-  bp.loc = bp.loc,
-  BasePairInterval = BasePairInterval,
-  Save = TRUE,
-  DataPath = DataPath.mm52
-  )
+foreach(FragIndex = FragIndices10, .inorder=FALSE, .packages=Packages_Par) %dopar% fn_saveTruncData(
+      Chr                   = Chr, 
+      FragIndex             = FragIndex, 
+      DataPath.mf           = DataPath.mm52, 
+      Truncate              = TRUE,
+      TruncateLength        = 0,
+      StretchPercentAllowed = 50, 
+      Save                  = TRUE, 
+      bp.loc                = bp.loc
+    )
+stopCluster(cl)
 
+cl <- makeCluster(14)
+registerDoParallel(cl)
+foreach(FragIndex = FragIndices10, .inorder=FALSE, .packages=Packages_Par) %dopar% fn_smoothByFragment(
+  Chr           = Chr, 
+  FragIndex     = FragIndex, 
+  DataPath.mf   = DataPath.mm52, 
+  Save          = TRUE
+  )
 stopCluster(cl)
 
