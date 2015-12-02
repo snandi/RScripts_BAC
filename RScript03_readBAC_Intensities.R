@@ -25,17 +25,11 @@ Packages <- PackagesLoaded$Packages
 Packages_Par <- PackagesLoaded$Packages_Par
 
 ########################################################################
-Chr <- 'chr22'
-Args <- (commandArgs(TRUE))
-for(i in 1:length(Args)){
-  eval(parse(text = Args[[i]]))
-}
+Chr <- 'chr7'
 
 Today <- Sys.Date()
 ConversionFactor <- 206
 BasePairInterval <- ConversionFactor
-#Chr <- 'chr7'
-#ChrNum <- 7
 
 bp.loc <- fn_load_bploc(
   ConversionFactor = ConversionFactor, 
@@ -45,10 +39,10 @@ bp.loc <- fn_load_bploc(
 ########################################################################
 ## Corresponding Nmaps of the BAC DNA regions exist only for Chr 7
 ########################################################################
-#Chr <- 'chr7'
 ChrNum <- gsub(pattern = 'chr', replacement = '', x = Chr)
 
-FragIndex <- 5
+FragIndex <- 12441
+
 FragIndices <- c(12437:12447) 
 BackbonePixels <- 1
 OpticalRes_Factor <- 1
@@ -59,7 +53,9 @@ OpticalRes_Factor <- 1
 Filename_fragTable <- paste0('/z/Proj/newtongroup/snandi/mm52-all7341/RData/', Chr, '/', Chr, '_Table.RData')
 load(Filename_fragTable)
 Table <- get(paste0(Chr, '_', 'Table'))
-FragIndices10 <- subset(Table, numMolecules >= 10)[, 'refStartIndex']
+
+bp.loc_BAC <- subset(bp.loc, alignedFragIndex %in% FragIndices)
+FragTable <- subset(Table, refStartIndex %in% FragIndices)
 ########################################################################
 
 BasePairInterval <- 206*OpticalRes_Factor   ## Length of base pair interval to estimate gcat %
@@ -68,69 +64,43 @@ NumBP_Frag <- subset(bp.loc, alignedChr == Chr & alignedFragIndex == FragIndex)[
 #NumSubFrag <- round(NumBP_Frag/BasePairInterval, 0) ## Number of sub fragments
 PixelLength_Theo <- subset(bp.loc, alignedChr == Chr & alignedFragIndex == FragIndex)[['PixelLength_Theo']]
 
-## IntensityData_inRange <- fn_saveTruncData(
-##   Chr                   = Chr, 
-##   FragIndex             = FragIndex, 
-##   DataPath.mf           = DataPath.mm52, 
-##   Truncate              = TRUE,
-##   TruncateLength        = 1,
-##   StretchPercentAllowed = 50, 
-##   Save                  = TRUE, 
-##   bp.loc                = bp.loc
-## )
+IntensityData <- fn_loadTruncData(
+  Chr = Chr, 
+  FragIndex = FragIndex, 
+  DataPath.mf = DataPath.mm52, 
+  SaveInGlobalEnv = T
+)
+Regist_PixelFrom <- 6
+#Regist_PixelTo <- PixelLength_Theo - 6
+Regist_PixelTo <- 45
 
-#######################################################################
-## This for loop just saves the intensities of Nmaps in RData format ##
-#######################################################################
-# for(FragIndex in FragIndices){
-#   print(FragIndex)
-#   IntensityData_inRange <- fn_saveTruncData(
-#     Chr                   = Chr, 
-#     FragIndex             = FragIndex, 
-#     DataPath.mf           = DataPath.mm52, 
-#     Truncate              = FALSE,
-#     #  TruncateLength        = 5,
-#     StretchPercentAllowed = 50, 
-#     Save                  = TRUE, 
-#     bp.loc                = bp.loc
-#   )
-  ## fn_smoothByFragment(
-  ##   Chr         = Chr, 
-  ##   FragIndex   = FragIndex, 
-  ##   DataPath.mf = DataPath.mm52, 
-  ##   Save        = TRUE
-  ## )
-# }
+Data_toRegist <- fn_prepDataForRegist_VarNorm(
+  Chr = Chr, 
+  FragIndex = FragIndex, 
+  DataPath.mf = DataPath.mm52, 
+  Regist_PixelFrom = Regist_PixelFrom, 
+  Regist_PixelTo = Regist_PixelTo,
+  PairwiseSimilarityThreshold = 0.2
+)
+## Extract all elements of the list
+for(Name in names(Data_toRegist)){
+  Object <- Data_toRegist[[Name]]
+  assign(x=paste('Data', Name, sep='_'), value=Object, envir=.GlobalEnv)
+}
+PixelPos <- seq(from = Regist_PixelFrom, to = Regist_PixelTo, by = 1)
 
-#########################################################################
-## Parallelized execution of smoothing the intensity files produced from 
-## the above for loop
-#########################################################################
-## For execution by fragment 
-#fn_smoothByFragment(Chr, FragIndex=FragIndex, DataPath.mf, Save=TRUE)
+Data_Intensity_toRegist_D1 <- diff(Data_Intensity_toRegist)
+Sim_NoisyCurves <- fn_kma.similarity_mat(
+  Mat               = Data_Intensity_toRegist_D1, 
+  Xaxis             = PixelPos[-1],
+  similarity.method = "d1.pearson"
+)
+AvgSimilarity <- round(Sim_NoisyCurves[['AvgSimilarity']], 4)
 
-## For parallel execution  
-cl <- makeCluster(14)
-registerDoParallel(cl)
-foreach(FragIndex = FragIndices10, .inorder=FALSE, .packages=Packages_Par) %dopar% fn_saveTruncData(
-      Chr                   = Chr, 
-      FragIndex             = FragIndex, 
-      DataPath.mf           = DataPath.mm52, 
-      Truncate              = TRUE,
-      TruncateLength        = 0,
-      StretchPercentAllowed = 50, 
-      Save                  = TRUE, 
-      bp.loc                = bp.loc
-    )
-stopCluster(cl)
-
-cl <- makeCluster(14)
-registerDoParallel(cl)
-foreach(FragIndex = FragIndices10, .inorder=FALSE, .packages=Packages_Par) %dopar% fn_smoothByFragment(
-  Chr           = Chr, 
-  FragIndex     = FragIndex, 
-  DataPath.mf   = DataPath.mm52, 
-  Save          = TRUE
-  )
-stopCluster(cl)
-
+Plot <- fn_plotMultCurves(
+  Data = Data_Intensity_toRegist, 
+  ColsToPlot = colnames(Data_Intensity_toRegist), 
+  XVar = PixelPos, 
+  MainTitlePhrase = paste('Avg Similarity:', AvgSimilarity)
+)
+Plot
