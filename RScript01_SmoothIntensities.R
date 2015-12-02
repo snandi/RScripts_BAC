@@ -3,7 +3,8 @@ rm(list=objects(all.names=TRUE))
 #dev.off()
 
 ########################################################################
-## This script registers the intensities of Nmaps aligned to BAC segments
+## This script loads and smooths the intensities of all intervals
+## aligned to any chr, for the mm52 data
 ########################################################################
 
 ########################################################################

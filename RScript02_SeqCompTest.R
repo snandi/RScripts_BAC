@@ -3,7 +3,9 @@ rm(list=objects(all.names=TRUE))
 #dev.off()
 
 ########################################################################
-## This script registers the intensities of Nmaps aligned to BAC segments
+## This script reads the sequence data from the fasta files, creates
+## GCAT ratios for each interval, creates the ggplot objects for the
+## sequence plots, and the signals (fluctuation of GC percentages)
 ########################################################################
 
 ########################################################################
@@ -92,3 +94,5 @@ foreach(FragIndex = FragIndices10, .inorder=FALSE, .packages=Packages_Par) %dopa
 
 stopCluster(cl)
 
+## The text files saved by this function contains the following elements:
+## Chr, FragIndex, GC_VarIndex, GC_pct, Length

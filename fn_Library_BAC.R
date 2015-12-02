@@ -31,6 +31,8 @@ fn_load_bploc <- function(ConversionFactor=206, Filename.bploc){
 ###############################################################################
 ## This function saves sequence composition related objects
 ###############################################################################
+## The text files saved by this function contains the following elements:
+## Chr, FragIndex, GC_VarIndex, GC_pct, Length
 fn_saveSeqComp <- function(
   Chr, 
   FragIndex,
@@ -99,4 +101,5 @@ fn_saveSeqComp <- function(
   }
 
 }
+###############################################################################
 
