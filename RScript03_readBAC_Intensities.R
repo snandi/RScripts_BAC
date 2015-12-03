@@ -41,7 +41,7 @@ bp.loc <- fn_load_bploc(
 ########################################################################
 ChrNum <- gsub(pattern = 'chr', replacement = '', x = Chr)
 
-FragIndex <- 12441
+FragIndex <- 12442
 
 FragIndices <- c(12437:12447) 
 BackbonePixels <- 1
@@ -70,9 +70,9 @@ IntensityData <- fn_loadTruncData(
   DataPath.mf = DataPath.mm52, 
   SaveInGlobalEnv = T
 )
-Regist_PixelFrom <- 6
+Regist_PixelFrom <- 46
 #Regist_PixelTo <- PixelLength_Theo - 6
-Regist_PixelTo <- 45
+Regist_PixelTo <- 85
 
 Data_toRegist <- fn_prepDataForRegist_VarNorm(
   Chr = Chr, 
