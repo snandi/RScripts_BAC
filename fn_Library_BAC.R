@@ -72,9 +72,10 @@ fn_saveSeqComp <- function(
   GC_VarIndex <- round(mean(GCAT$Test), 2 )
 
   my.Colors=c('gray25', 'olivedrab1', 'olivedrab4', 'gray56')
-  Length <- round((FragBP_End - FragBP_Start)/1000, 0)
+  Length_kb <- round((FragBP_End - FragBP_Start)/1000, 4)
+  Length_Pixels <- round((FragBP_End - FragBP_Start)/BasePairInterval, 0)
   #if(MainTitle==''){
-    MainTitle <- paste(Chr, 'Frag', FragIndex, ',', Length, 'MB Long, Variability:', GC_VarIndex)
+    MainTitle <- paste(Chr, 'Frag', FragIndex, ',', Length_kb, 'kb Long, Variability:', GC_VarIndex)
   #}
 
   SeqPlot <- qplot() + geom_bar(aes(y = proportion, x = bp, fill = base),
@@ -91,7 +92,7 @@ fn_saveSeqComp <- function(
   FragmentName <- paste(Chr, '_frag', FragIndex, '_SeqComp', sep='')
 
   FragmentFilename.out <- paste(DataPath, FragmentName, '_GC_Signal.txt', sep='')
-  cat(c(Chr, FragIndex, GC_VarIndex, GC_pct, Length), file = FragmentFilename.out, append = FALSE)
+  cat(c(Chr, FragIndex, GC_VarIndex, GC_pct, Length_kb, Length_Pixels), file = FragmentFilename.out, append = FALSE)
 
   if(Save){
     FragmentFilename.out <- paste(DataPath, FragmentName, '.RData', sep='')
