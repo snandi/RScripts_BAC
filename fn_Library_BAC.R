@@ -49,12 +49,15 @@ fn_saveSeqComp <- function(
                        'refMapCoordEnd']
   NumBP_Frag <- FragBP_End - FragBP_Start ## Length of frag in BP
   NumSubFrag <- round(NumBP_Frag/BasePairInterval, 0)
-  SeqComp <- fn_returnSeqComp(Chr=Chr, FragIndex=FragIndex,
-                              Interval=BasePairInterval,
-                              numPixels=NumSubFrag,
-                              Filename=paste0('~/human_nMaps/SequenceData/', Chr, '.fa'),
-                              FragBP_Start=FragBP_Start,
-                              FragBP_End=FragBP_End)
+  SeqComp <- fn_returnSeqComp(
+    Chr           = Chr, 
+    FragIndex     = FragIndex,
+    Interval      = BasePairInterval,
+    numPixels     = NumSubFrag,
+    Filename      = paste0('~/human_nMaps/SequenceData/', Chr, '.fa'),
+    FragBP_Start  = FragBP_Start,
+    FragBP_End    = FragBP_End
+  )
 
   GCAT <- SeqComp[['SplitSeq_GCAT']]
   GCAT.Long <- melt(data = GCAT, id.vars = 'Base', measure.vars = c('C', 'G', 'A', 'T'))
@@ -64,18 +67,21 @@ fn_saveSeqComp <- function(
   GCAT$Test <- 0
   GCAT$Test <- apply(X = GCAT, MARGIN = 1, FUN = function(Row){ 
     Val = 0; 
-    if(Row[1] + Row[2] < 0.35) {Val = 0.5}; 
+    if(Row[1] + Row[2] < 0.35) {Val = 1}; 
     if(Row[1] + Row[2] > 0.65) {Val = 1}; 
     return(Val)}
   )
 
-  GC_VarIndex <- round(mean(GCAT$Test), 2 )
+  GC_VarIndex <- round(mean(GCAT$Test), 3 )
+  GC_SD <- round(sd(rowSums(GCAT[,c('G', 'C')])), 4)
 
   my.Colors=c('gray25', 'olivedrab1', 'olivedrab4', 'gray56')
   Length_kb <- round((FragBP_End - FragBP_Start)/1000, 4)
   Length_Pixels <- round((FragBP_End - FragBP_Start)/BasePairInterval, 0)
   #if(MainTitle==''){
-    MainTitle <- paste(Chr, 'Frag', FragIndex, ',', Length_kb, 'kb Long, Variability:', GC_VarIndex)
+    MainTitle <- paste(Chr, 'Frag', FragIndex, ',', Length_kb,
+                       'kb Long, GC Var Index:', GC_VarIndex,
+                       'GC sd:', GC_SD)
   #}
 
   SeqPlot <- qplot() + geom_bar(aes(y = proportion, x = bp, fill = base),
@@ -92,7 +98,7 @@ fn_saveSeqComp <- function(
   FragmentName <- paste(Chr, '_frag', FragIndex, '_SeqComp', sep='')
 
   FragmentFilename.out <- paste(DataPath, FragmentName, '_GC_Signal.txt', sep='')
-  cat(c(Chr, FragIndex, GC_VarIndex, GC_pct, Length_kb, Length_Pixels), file = FragmentFilename.out, append = FALSE)
+  cat(c(Chr, FragIndex, GC_VarIndex, GC_SD, GC_pct, Length_kb, Length_Pixels), file = FragmentFilename.out, append = FALSE)
 
   if(Save){
     FragmentFilename.out <- paste(DataPath, FragmentName, '.RData', sep='')

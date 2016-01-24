@@ -18,3 +18,5 @@ Rout/*
 Temp*.*
 tmp*.*
 *.sh
+CondorLogs/
+SubmitFiles/
