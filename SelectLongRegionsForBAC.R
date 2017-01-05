@@ -59,7 +59,7 @@ if (length(Args)==0) {
   MIN_SUBINTERVAL_LENGTH  <- 50   ## Pixels
   SLIDING_WINDOW          <- 200  ## Sliding window comparison
   GAP_OPENING             <- -10
-  CHROMOSOME_INT          <- 1
+  CHROMOSOME_INT          <- 19
 } else{
   for(i in 1:length(Args)){
     eval(parse(text = Args[[i]]))
